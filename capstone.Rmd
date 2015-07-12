@@ -1,0 +1,156 @@
+---
+title: "Coursera, Data Science, Capstone Project"
+author: patrick charles  
+output:  
+    html_document:
+        keep_md: true
+---
+
+# Data Science Capstone - Text Prediction with NLP
+- Course: Data Science Capstone
+- Project: Capston Project
+- Author: Patrick Charles
+
+## Summary
+
+## Prerequisites
+
+```{r prereqs, message=FALSE, warning=FALSE}
+  if(!require(tm)) install.packages("tm", dep=T)
+  library(tm)
+  if(!require(SnowballC)) install.packages("SnowballC", dep=T)
+  library(SnowballC)
+  if(!require(Rgraphviz)) install.packages("Rgraphviz", dep=T)
+  source("http://bioconductor.org/biocLite.R")
+  biocLite("Rgraphviz")
+  library(Rgraphviz)
+  
+  library(ggplot2)
+  library(wordcloud)
+```
+
+## Examine the text corpus
+```{r corpus.find}
+  cpath <- file.path(".", "data", "final", "en_US")
+  csize <- length(dir(cpath))
+  dir(cpath)
+```
+There are `r csize` documents in the English corpus.
+
+## Load corpus
+```{r corpus.load, cache=TRUE}
+  docs <- Corpus(DirSource(cpath))
+  docs
+  class(docs)
+  summary(docs)
+```
+
+## Load smaller test corpus
+```{r corpus.small.load, cache=TRUE}
+  spath <- file.path(".", "data", "test", "en_US")
+  sdocs <- Corpus(DirSource(spath))
+  sdocs
+  class(sdocs)
+  summary(sdocs)
+```
+
+## Clean/Transform the corpus
+```{r corpus.clean}
+  filtered <- sdocs
+
+  # custom transformation - specified texts to spaces
+  toSpace <- content_transformer(function(x, pattern) gsub(pattern, " ", x))
+
+  # custom transformation - UTF-8 to ASCII (remove special characters)
+  removeSpecial <- content_transformer(function(x)
+    iconv(x, "ASCII", "UTF-8", sub=""))
+
+  # emoticons (https://en.wikipedia.org/wiki/List_of_emoticons)
+  emoticons <- c(":-)", ":)", ":D", ":o)", ":]",
+  ":3", ":c)", ":>", "=]", "8)", "=)", ":}", ":^)", ":-D", "8-D", "8D", "x-D", "xD", "X-D", "XD", "=-D", "=D", "=-3",
+  "=3", "B^D", ":-))", ">:[", ":-(", ":(", ":-c", ":c", ":-<", ":<", ":-[", ":[", ":{", ";(", ":-||", ":@", ">:(", ":'-(", ":'(", ":'-)", ":')", "D:<", "D:", "D8", "D;",
+  "D=", "DX", "v.v", "D-':", ">:O", ":-O", ":O", ":-o", ":o", "8-0", "O_O", "o-o", "O_o", "o_O", "o_o", "O-O", ";D", ">:P", ":-P", ":P", "X-P", "x-p", "xp", "XP", ":-p", ":p", 
+  "=p", ":-b", ":b", "d:", ":L", "=L", ":S", ":-X", ":X", ":-#", ":#", "O:-)", "0:-3", "0:3", "0:-)", "0:)", "0;^)", ":-J", "|-O", 
+  "<3", "</3")
+
+  # remove emoticons
+#  filtered <- tm_map(filtered, removeWords, emoticons)
+  
+  # remove digits
+  filtered <- tm_map(filtered, removeNumbers)
+
+  # substitute slashes, @'s and pipes to spaces
+  filtered <- tm_map(filtered, toSpace, "/|@|\\|")
+
+  # remove special characters
+  filtered <- tm_map(filtered, removeSpecial)
+
+  # convert to lower case
+  filtered <- tm_map(filtered, content_transformer(tolower))
+
+  # remove punctuation
+  # (note that this leads to word concat, when no whitespace)
+  filtered <- tm_map(filtered, removePunctuation)
+
+  # remove stopwords
+  # filtered <- tm_map(filtered, removeWords, stopwords("english"))
+  # stemming (remove common word endings)
+  # filtered <- tm_map(filtered, stemDocument)
+
+  # strip excess whitespace
+  filtered <- tm_map(filtered, stripWhitespace)
+```  
+
+## Exploratory Analysis
+
+### Document Term Matrix
+
+```{r explore.terms}
+  dtm <- DocumentTermMatrix(filtered)
+  freq <- colSums(as.matrix(dtm))
+  count <- length(freq)
+  ord <- order(freq)
+
+  # most frequent terms
+  freq[tail(ord, 20)]
+
+  # least frequent terms
+  freq[head(ord, 20)]
+
+  # find frequent terms, alternate
+  findFreqTerms(dtm, lowfreq=1000)
+
+  # find associations
+# !!! this seems to be correlating documents, not words?  
+#  findAssocs(dtm, "data", corlimit=0.6)
+
+  # plot common associations
+#  plot(dtm, terms=findFreqTerms(dtm, lowfreq=100)[1:50],
+#    corThreshold=0.9)
+
+# plot frequencies
+freq <- sort(colSums(as.matrix(dtm)), decreasing=TRUE)
+head(freq, 14)
+wf <- data.frame(word=names(freq), freq=freq)
+head(wf)
+sub <- subset(wf, freq>500)
+ggplot(sub, aes(word, freq)) + geom_bar(stat="identity") + 
+theme(axis.text.x=element_text(angle=45, hjust=1))
+  
+# wordcloud
+set.seed(482)
+wordcloud(names(freq), freq, min.freq=40, max.words=100,
+  colors=brewer.pal(6, "Dark2"))
+
+
+```
+## Modeling
+
+## Prediction
+
+
+
+```{r additional.methods}
+# remove sparse terms...
+#   dtms <- removeSparseTerms(dtm, 0.1)
+

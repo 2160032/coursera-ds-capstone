@@ -1,0 +1,157 @@
+---
+title: "Data Science Capstone Project, Milestone 1"
+author: patrick charles
+date: "`r Sys.Date()`"
+output:  
+    html_document:
+        keep_md: true
+---
+
+## Text Prediction (Intial Milestone Report)
+
+## Summary
+
+In this dynamic document, the body of sample text for the Johns Hopkins data science specialization word prediction capstone project is loaded, some basic cursory exploratory analysis performed and next steps recommended.
+
+The [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) sample texts include content captured from blogs, new sources and twitter.
+
+```{r prereqs, message=FALSE, warning=FALSE, echo=FALSE}
+## Prerequisites
+  if(!require(tm)) install.packages("tm", dep=T)
+  library(tm)
+  if(!require(SnowballC)) install.packages("SnowballC", dep=T)
+  library(SnowballC)
+  if(!require(Rgraphviz)) {
+    source("http://bioconductor.org/biocLite.R")
+    biocLite("Rgraphviz")
+  }
+  library(Rgraphviz)
+  library(ggplot2)
+  library(wordcloud)
+  if(!require(qdap)) install.packages("qdap", dep=T)
+  library(qdap)
+  library(dplyr)
+```
+
+## Load and Examine the Sample Texts
+
+### Documents
+
+The English-language content is used for this preliminary analysis.
+
+```{r corpus.find}
+  # view the English sample text source documents
+  cpath <- file.path(".", "data", "final", "en_US")
+  csize <- length(dir(cpath))
+  dir(cpath)
+```
+
+```{r corpus.wc, echo=FALSE}
+  wc <- function(corpus) {
+    unlist(strsplit(sub("^ +", "",
+      system(paste("wc data/final/en_US/en_US.", corpus, ".txt", sep=""),
+      intern=TRUE)), split=" +"))
+  }
+  wc.total.m <- round((as.numeric(wc("blogs")[2]) +
+                       as.numeric(wc("news")[2]) +
+                       as.numeric(wc("twitter")[2]))/1000/1000, digits=0)
+```
+There are `r csize` documents in the English text samples.
+
+* __blogs__ contains `r wc("blogs")[1]` lines, `r wc("blogs")[2]` words, and `r wc("blogs")[3]` characters.
+* __twitter__ contains `r wc("twitter")[1]` lines, `r wc("twitter")[2]` words, and `r wc("twitter")[3]` characters.
+* __news__ contains `r wc("news")[1]` lines, `r wc("news")[2]` words, and `r wc("news")[3]` characters.
+
+```{r corpus.load, cache=TRUE, echo=FALSE}
+### Load Corpus Body
+  docs <- Corpus(DirSource(cpath))
+  corpus <- docs
+```
+
+```{r corpus.small.load, cache=TRUE, echo=FALSE}
+### Load smaller test corpus
+  spath <- file.path(".", "data", "test", "en_US")
+  sdocs <- Corpus(DirSource(spath))
+  corpus <- sdocs
+```
+
+## Exploratory Analysis
+
+A document-term matrix is created from the samples for the purpose of
+analyzing word frequencies and characteristics.
+
+```{r explore.terms}
+  dtm <- DocumentTermMatrix(corpus)
+  freq <- colSums(as.matrix(dtm))
+  count <- length(freq)
+  ord <- order(freq)
+```
+
+### Most Frequently Occurring Terms
+
+```{r explore.terms.freq}
+  findFreqTerms(dtm, lowfreq=200)
+```
+
+```{r explore.terms.fplot, fig.width=12, echo=FALSE}
+  # plot frequencies
+  freq <- sort(colSums(as.matrix(dtm)), decreasing=TRUE)
+  wf <- data.frame(word=names(freq), freq=freq)
+  sub <- subset(wf, freq>500)
+  ggplot(sub, aes(reorder(word, freq), freq)) +
+    geom_bar(stat="identity") + 
+    theme(axis.text.x=element_text(angle=45, hjust=1)) +
+    ggtitle("Most Common Words") + xlab("Word") + ylab("Frequency") 
+```
+
+### Least Frequently Occurring Terms
+
+```{r explore.terms.least}
+  head(findFreqTerms(dtm, highfreq=1), 10)
+```
+
+### Wordcloud
+
+The wordcloud is a graphical visualization of word occurrence where
+size is scaled by frequency.
+
+```{r explore.terms.wc}
+  set.seed(482)
+  wordcloud(names(freq), freq, min.freq=40, max.words=100,
+    colors=brewer.pal(8, "Dark2"), rot.per=0.35, scale=c(5, 0.5))
+```
+
+### Word Length Frequency
+
+A histogram of number of letters by word frequency illustrates
+the distribution of word lengths and highlights the average word length.
+
+```{r explore.terms.wfreq, fig.width=12, echo=FALSE}
+  words <- dtm %>%
+    as.matrix %>%
+    colnames %>%
+    (function(x) x[nchar(x) < 20])
+  words.lengths <- data.frame(length=nchar(words))
+  ggplot(words.lengths, aes(x=length)) +
+    geom_histogram(binwidth=1) + 
+    geom_vline(xintercept=mean(nchar(words)),
+              color="red", size=1, alpha=0.5) + 
+    labs(x="Letters", y="Words")
+```
+
+The average length word in the sample texts has `r round(mean(nchar(words)), digits=0)` characters.
+
+
+## Next Steps
+
+* Data Cleaning: The least frequent word list reveals that the word sources are littered with separator characters, urls and other non-word sequences which should be filtered. Utilize the [tm](http://cran.r-project.org/web/packages/tm/index.html) text mining package.
+
+* Build a model of word associations for the purpose of predictions, e.g. n-grams, based on the word sample texts and frequencies of multi-word chains. Utilize the [RWeka](http://cran.r-project.org/web/packages/RWeka/index.html) machine learning tools package.
+
+* Optimize the model. The current dataset is very large with over __`r wc.total.m` million words__. Performance constraints will likely require subsetting/narrowing the predictive search space.
+
+* Build and deploy an interactive application using [Shiny](http://shinyapps.io) that allows a user to interact with the model by allowing the predictive algorithm to suggest words as the user types text.
+
+
+
+

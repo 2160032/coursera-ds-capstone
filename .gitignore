@@ -1,0 +1,18 @@
+.RData
+.Rhistory
+
+# knitr generated files
+milestone.html
+milestone_cache/
+capstone.html
+capstone_cache/
+
+# keep these so project renders on github
+#milestone.md
+#milestone_files/
+#capstone.md
+#capstone_files/
+
+# course notes and downloaded data
+week_1.txt
+data/
