@@ -12,6 +12,7 @@
 ## used by the text predictor function and shiny application
 library(RWeka)
 library(tm)
+library(slam)
 source("textPrediction.R")
 
 
@@ -25,7 +26,10 @@ TSIZE <- 1000000 # reduce the in-memory size of vcorpus from ~16GB to 4GB
 ## constant representing the size of corpus used to generate ngrams
 ##   too large and 'tm' can't handle all the word combination permutations
 ##   too small and common ngrams don't occur at sufficient frequency
-FSIZE <- 100000 # much larger and sparse matrix creation takes hours
+# fixed 
+# 200000 - causes "NAs produced by integer overflow" on dtm's (fixed w/ slam)
+# 500000 - causes illegal memory access
+FSIZE <- 200000 # much larger and sparse matrix creation takes hours
 
 
 ## data sources
@@ -59,29 +63,34 @@ PentagramTokenizer <- function(x, n) NGramTokenizer(x, Weka_control(min=5, max=5
 ## create all the document term matrices, frequency vectors and
 ## word-frequency data frames. 'ft' specifies the frequency threshold for
 ## inclusion/optimization
+options(mc.cores=1) # limit cores to prevent rweka processing problems
+
 ft.1 <- 10
 dtm.1 <- DocumentTermMatrix(filtered.sub, control=list(bounds=list(global=c(ft.1, Inf))))
-freq.1 <- sort(colSums(as.matrix(dtm.1)), decreasing=TRUE)
+freq.1 <- sort(col_sums(dtm.1, na.rm=T), decreasing=TRUE)
 nf.1 <- data.frame(word=names(freq.1), freq=freq.1)
 
 ft.2 <- 2
 dtm.2 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=BigramTokenizer, bounds=list(global=c(ft.2, Inf))))
-freq.2 <- sort(colSums(as.matrix(dtm.2)), decreasing=TRUE)
+## product of rows*columns exceeds max vector size
+##freq.2 <- sort(colSums(as.matrix(ph.dtm.2)), decreasing=TRUE)
+## use slam::col_sums instead
+freq.2 <- sort(col_sums(dtm.2, na.rm=T), decreasing=TRUE)
 nf.2 <- data.frame(word=names(freq.2), freq=freq.2)
 
 ft.3 <- 2
 dtm.3 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=TrigramTokenizer, bounds=list(global=c(ft.3, Inf))))
-freq.3 <- sort(colSums(as.matrix(dtm.3)), decreasing=TRUE)
+freq.3 <- sort(col_sums(dtm.3, na.rm=T), decreasing=TRUE)
 nf.3 <- data.frame(word=names(freq.3), freq=freq.3)
 
 ft.4 <- 2 
 dtm.4 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=QuadgramTokenizer, bounds=list(global=c(ft.4, Inf))))
-freq.4 <- sort(colSums(as.matrix(dtm.4)), decreasing=TRUE)
+freq.4 <- sort(col_sums(dtm.4, na.rm=T), decreasing=TRUE)
 nf.4 <- data.frame(word=names(freq.4), freq=freq.4)
 
 ft.5 <- 2
 dtm.5 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=PentagramTokenizer, bounds=list(global=c(ft.5, Inf))))
-freq.5 <- sort(colSums(as.matrix(dtm.5)), decreasing=TRUE)
+freq.5 <- sort(col_sums(dtm.5, na.rm=T), decreasing=TRUE)
 nf.5 <- data.frame(word=names(freq.5), freq=freq.5)
 
 # package all the ngram-frequency frames into a single object

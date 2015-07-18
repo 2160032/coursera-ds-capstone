@@ -33,7 +33,7 @@ removeSpecial <- content_transformer(function(x)
 ## given a set of texts, apply cleaning transformations
 ## and return a tm corpus containing the documents
 ##
-createCleanCorpus <- function(texts) {
+createCleanCorpus <- function(texts, remove.punct=TRUE) {
     texts <- expandContractions(texts)
     filtered <- VCorpus(VectorSource(texts))
   
@@ -49,9 +49,10 @@ createCleanCorpus <- function(texts) {
     # convert to lower case
     filtered <- tm_map(filtered, content_transformer(tolower))
 
-    # remove punctuation
-    # (note that this leads to word concat, when no whitespace)
-    filtered <- tm_map(filtered, removePunctuation)
+    # conditionally remove punctuation
+    if(remove.punct) {
+        filtered <- tm_map(filtered, removePunctuation)
+    }
 
     # strip excess whitespace
     filtered <- tm_map(filtered, stripWhitespace)
@@ -103,7 +104,9 @@ findBestMatches <- function(words, nf, count) {
     # matching ngrams that start with the provided words
     f <- head(nf[grep(paste("^", words.pre, " ", sep=""), nf$word), ], count)
     # strip away the search words from all the results
-    gsub(paste("^", words.pre, " ", sep=""), "", as.character(f$word))
+    r <- gsub(paste("^", words.pre, " ", sep=""), "", as.character(f$word))
+    # filter incomplete word suggestions
+    r[!r %in% c("s")]
 }
   
 ## given an input text, return the predicted next word
@@ -136,7 +139,7 @@ predictNext <- function(text, nfl, count=1) {
 
 ## clean the input text and perform prediction
 cleanPredictNext <- function(text, nfl, count=1) {
-    text <- as.character(createCleanCorpus(text)[[1]])
+    text <- as.character(createCleanCorpus(text)[[1]], remove.punct=TRUE)
     predictNext(text, nfl, count)
 }
 

@@ -13,10 +13,9 @@ library(RWeka)
 shinyServer(
     function(input, output, session) {
         source("textPrediction.R") # load the prediction functions
-        #        load("nFreq.Rda") # load the ngram sparse matrices
-        load("nFreq-50000-2-2-2-2-2.Rda") # load the ngram sparse matrices
+        load("nFreq.Rda") # load the optimized ngram sparse matrices
 
-        # react to text input or prediction parameter events with a prediction
+        ## react to text input or prediction parameter events with a prediction
         observe({
             cat(paste("predicting next for ", input$text_in, "..\n", sep=""))
             text.in <- as.character(input$text_in)

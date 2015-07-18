@@ -46,6 +46,7 @@ The [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset
   library(ggplot2)
   library(wordcloud)
   library(dplyr)
+  library(slam)
 
   # custom functions for text prediction
   source("textPrediction.R")
@@ -115,8 +116,10 @@ There are `r csize` documents in the English text samples.
 
 ## Cleaning and Transformation
 ```{r corpus.clean}
-  filtered <- createCleanCorpus(texts.training)
-  filtered.test <- createCleanCorpus(texts.testing)
+  # for generating predictive corpus, leave punctuation. tm/dtm uses.
+  filtered <- createCleanCorpus(texts.training, remove.punct=FALSE)
+  # for generating test text, remove punctuation
+  filtered.test <- createCleanCorpus(texts.testing, remove.punct=TRUE)
 
   filtered
   filtered.test
@@ -368,8 +371,9 @@ last word, to guage the accuracy of the model.
 
 # accuracies
 #  ~7-8% - load("nFreq-10000-1-1-1-1-1.Rda")
-#  ~7-8% - load("nFreq-20000-1-1-1-1-1.Rda")    9 MB
-#     9% - load("nFreq-50000-2-2-2-2-2.Rda")    977 K
+#  ~7-8% - load("nFreq-20000-1-1-1-1-1.Rda")        9 MB
+#     9% - load("nFreq-50000-2-2-2-2-2.Rda")        1 MB
+# 14-18% - load("nFreq-200000-10-2-2-2-2-2.Rda")  11.7 MB
 
 **`r length(filtered.test)`** strings were set aside in a test dataset.
 

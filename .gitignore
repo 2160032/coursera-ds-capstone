@@ -1,5 +1,6 @@
 .RData
 .Rhistory
+.cache
 
 # knitr generated files
 milestone.html
