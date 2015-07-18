@@ -15,6 +15,23 @@ FINAL=capstone
 final:
 	Rscript -e "rmarkdown::render('$(FINAL).Rmd', 'html_document', '$(FINAL).html'); browseURL('$(FINAL).html')"
 
+# run shiny server locally
+run_app:
+#	cp nFreq.Rda text-predictor/
+	R -e "shiny::runApp('text-predictor', display.mode='showcase')"
+
+# deploy to shinyapps.io
+deploy_app:
+	R -e "shinyapps::deployApp('text-predictor')"
+
+# slides (apply on branch gh-pages)
+slidify:
+	R -e "slidify::slidify('index.Rmd')"
+
+# view slides locally
+view_slides:
+	R -e "browseURL('index.html')"
+
 # remove generated files
 clean:
 	rm -f *.html *.md

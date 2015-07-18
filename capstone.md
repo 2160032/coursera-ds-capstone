@@ -1,11 +1,6 @@
----
-title: "Data Science Capstone Project"
-author: patrick charles
-date: "`r Sys.Date()`"
-output:  
-    html_document:
-        keep_md: true
----
+# Data Science Capstone Project
+patrick charles  
+`r Sys.Date()`  
 
 ## Text Prediction (Exploratory Analysis and Prediction)
 
@@ -17,39 +12,9 @@ In this dynamic document, the body of sample texts is loaded, exploratory analys
 
 The [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) sample texts include content captured from blogs, new sources and twitter.
 
-```{r global_options, include=FALSE}
-  knitr::opts_chunk$set(fig.width=12, fig.height=8)
 
-  local({
-    r <- getOption("repos")
-    r["CRAN"] <- "http://cran.cnr.berkeley.edu/"
-    options(repos = r)
-   })
-```
 
-```{r prereqs, message=FALSE, warning=FALSE, echo=FALSE}
-## Prerequisites
-  if(!require(tm)) install.packages("tm", dep=T)
-  library(tm)
-  if(!require(SnowballC)) install.packages("SnowballC", dep=T)
-  library(SnowballC)
-  if(!require(Rgraphviz)) {
-    source("http://bioconductor.org/biocLite.R")
-    biocLite("Rgraphviz")
-  }
-  if(!require(qdap)) install.packages("qdap", dep=T)
-  library(qdap)
-  if(!require(RWeka)) install.packages("RWeka", dep=T)
-  library(RWeka)
-  
-  library(Rgraphviz)
-  library(ggplot2)
-  library(wordcloud)
-  library(dplyr)
 
-  # custom functions for text prediction
-  source("textPrediction.R")
-```
 
 ## Load and Examine the Sample Texts
 
@@ -57,70 +22,53 @@ The [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset
 
 The English-language content is used for the analysis.
 
-```{r corpus.find}
+
+```r
   # view the English sample text source documents
   cpath <- file.path(".", "data", "final", "en_US")
   csize <- length(dir(cpath))
   dir(cpath)
 ```
 
-```{r corpus.wc, echo=FALSE}
-  wc <- function(ctree, corpus) {
-    unlist(strsplit(sub("^ +", "",
-      system(paste("wc ", ctree, corpus, sep=""),
-      intern=TRUE)), split=" +"))
-  }
-
-  ctree <- "data/final/en_US/en_US."
-  wc.blogs <- wc(ctree, "blogs.txt")
-  wc.news <- wc(ctree, "news.txt")
-  wc.twitter <- wc(ctree, "twitter.txt")
-
-  wc.total.m <- round((as.numeric(wc.blogs[2]) +
-                       as.numeric(wc.news[2]) +
-                       as.numeric(wc.twitter[2]))/1000/1000, digits=0)
-
 ```
-There are `r csize` documents in the English text samples.
+## [1] "en_US.blogs.txt"   "en_US.news.txt"    "en_US.twitter.txt"
+```
 
-* __blogs__ contains `r wc.blogs[1]` lines, `r wc.blogs[2]` words, and `r wc.blogs[3]` characters.
-* __twitter__ contains `r wc.twitter[1]` lines, `r wc.twitter[2]` words, and `r wc.twitter[3]` characters.
-* __news__ contains `r wc.news[1]` lines, `r wc.news[2]` words, and `r wc.news[3]` characters.
+
+There are 3 documents in the English text samples.
+
+* __blogs__ contains 899288 lines, 37334690 words, and 210160014 characters.
+* __twitter__ contains 2360148 lines, 30374206 words, and 167105338 characters.
+* __news__ contains 1010242 lines, 34372720 words, and 205811889 characters.
 
 ### Load Full Corpus of Texts
 
-```{r corpus.load, cache=TRUE, echo=FALSE}
 
-  blogs <- readLines("data/final/en_US/en_US.blogs.txt", skipNul=TRUE)
-  twitter <- readLines("data/final/en_US/en_US.twitter.txt", skipNul=TRUE)
-  news <- readLines("data/final/en_US/en_US.news.txt", skipNul=TRUE)
-
-  texts.full <- c(blogs, news, twitter)
-
-  name <- c("blog", "twitter", "news", "all")
-  bytes <- c(object.size(blogs), object.size(twitter), object.size(news), object.size(texts.full))
-  lines <- c(length(blogs), length(twitter), length(news), length(texts.full))
-  corpus.info <- data.frame(name, bytes, lines)
-
-  rm(blogs, twitter, news) # remove separate stores for each type
-```
 
 ### Subset into a Training and Testing Corpus
 
-```{r corpus.sub.load, cache=FALSE, echo=FALSE}
-  texts.training <- sample(texts.full, 10000, replace=FALSE)
-#  texts.training <- sample(texts.full, 500000, replace=FALSE)
-  texts.testing <- sample(texts.full, 100, replace=FALSE)
-```
+
 
 ## Cleaning and Transformation
-```{r corpus.clean}
+
+```r
   filtered <- createCleanCorpus(texts.training)
   filtered.test <- createCleanCorpus(texts.testing)
 
   filtered
+```
+
+```
+## <<VCorpus (documents: 10000, metadata (corpus/indexed): 0/0)>>
+```
+
+```r
   filtered.test
-```  
+```
+
+```
+## <<VCorpus (documents: 100, metadata (corpus/indexed): 0/0)>>
+```
 
 
 ## Exploratory Analysis
@@ -130,7 +78,8 @@ analyzing word frequencies and characteristics.
 
 ### Most Frequently Occurring Terms
 
-```{r explore.terms.freq}
+
+```r
   fthreshold <- 20 # frequency list entry threshold
   # minfreq <- 3 # too large. produces dim: 500000x229481 > 4503599627370496
   minfreq <- 10 # minimum required doc frequency for dtm
@@ -139,7 +88,15 @@ analyzing word frequencies and characteristics.
   wf.1 <- data.frame(word=names(freq.1), freq=freq.1)
   
   findFreqTerms(dtm.1, lowfreq=wf.1$freq[fthreshold])
- 
+```
+
+```
+##  [1] "about" "all"   "and"   "are"   "but"   "for"   "from"  "have" 
+##  [9] "his"   "not"   "out"   "said"  "that"  "the"   "they"  "this" 
+## [17] "was"   "will"  "with"  "you"
+```
+
+```r
   # plot frequencies
   ggplot(subset(wf.1, freq>wf.1$freq[fthreshold]),
     aes(reorder(word, freq), freq)) +
@@ -148,10 +105,18 @@ analyzing word frequencies and characteristics.
     ggtitle("Most Common Words") + xlab("Word") + ylab("Frequency") 
 ```
 
+![](capstone_files/figure-html/explore.terms.freq-1.png) 
+
 ### Least Frequently Occurring Terms
 
-```{r explore.terms.least}
+
+```r
   head(findFreqTerms(dtm.1, highfreq=1), 10)
+```
+
+```
+##  [1] "aaaand"  "aaawww"  "aahha"   "aahsl"   "aam"     "aardman" "aarons" 
+##  [8] "aarp"    "abab"    "aback"
 ```
 
 ### Wordcloud
@@ -159,31 +124,23 @@ analyzing word frequencies and characteristics.
 The wordcloud is a graphical visualization of word occurrence where
 size is scaled by frequency.
 
-```{r explore.terms.wc}
+
+```r
   set.seed(482)
   wordcloud(names(freq.1), freq.1, min.freq=40, max.words=100,
     colors=brewer.pal(8, "Dark2"), rot.per=0.35, scale=c(5, 0.5))
 ```
+
+![](capstone_files/figure-html/explore.terms.wc-1.png) 
 
 ### Word Length Frequency
 
 A histogram of number of letters by word frequency illustrates
 the distribution of word lengths and highlights the average word length.
 
-```{r explore.terms.wfreq, echo=FALSE}
-  words <- dtm.1 %>%
-    as.matrix %>%
-    colnames %>%
-    (function(x) x[nchar(x) < 20])
-  words.lengths <- data.frame(length=nchar(words))
-  ggplot(words.lengths, aes(x=length)) +
-    geom_histogram(binwidth=1) + 
-    geom_vline(xintercept=mean(nchar(words)),
-              color="red", size=1, alpha=0.5) + 
-    labs(x="Letters", y="Words")
-```
+![](capstone_files/figure-html/explore.terms.wfreq-1.png) 
 
-The average length word in the sample texts has `r round(mean(nchar(words)), digits=0)` characters.
+The average length word in the sample texts has 7 characters.
 
 
 ### N-grams
@@ -191,7 +148,8 @@ The average length word in the sample texts has `r round(mean(nchar(words)), dig
 n-grams are extracted to characterize the frequency of multi-word
 clusters.
 
-```{r explore.ngrams, cache=TRUE}
+
+```r
   # sentence delimiters; prevent clustering across sentence boundaries
   delimiters <- " \\t\\r\\n.!?,;\"()"
 
@@ -213,19 +171,31 @@ clusters.
   freq.2 <- sort(colSums(as.matrix(dtm.2)), decreasing=TRUE)
   wf.2 <- data.frame(word=names(freq.2), freq=freq.2)
   plotGram(gthreshold, freq.2, wf.2, "Bigram")
+```
 
+![](capstone_files/figure-html/explore.ngrams-1.png) 
+
+```r
   dtm.3 <-
     DocumentTermMatrix(filtered, control=list(tokenize=TrigramTokenizer))
   freq.3 <- sort(colSums(as.matrix(dtm.3)), decreasing=TRUE)
   wf.3 <- data.frame(word=names(freq.3), freq=freq.3)
   plotGram(gthreshold, freq.3, wf.3, "Trigram")
+```
 
+![](capstone_files/figure-html/explore.ngrams-2.png) 
+
+```r
   dtm.4 <-
     DocumentTermMatrix(filtered, control=list(tokenize=QuadgramTokenizer))
   freq.4 <- sort(colSums(as.matrix(dtm.4)), decreasing=TRUE)
   wf.4 <- data.frame(word=names(freq.4), freq=freq.4)
   plotGram(gthreshold, freq.4, wf.4, "Quadgram")
+```
 
+![](capstone_files/figure-html/explore.ngrams-3.png) 
+
+```r
   dtm.5 <-
     DocumentTermMatrix(filtered, control=list(tokenize=PentagramTokenizer))
   freq.5 <- sort(colSums(as.matrix(dtm.5)), decreasing=TRUE)
@@ -233,9 +203,12 @@ clusters.
   plotGram(gthreshold, freq.5, wf.5, "Quadgram")
 ```
 
+![](capstone_files/figure-html/explore.ngrams-4.png) 
+
 ### N-Gram Distribution
 
-```{r optimization.count}
+
+```r
   # return the number of entries with frequency exceeding count
   countAboveFrequency <- function(wf, count) {
     dim(wf[wf$freq > count, ])[1]
@@ -243,28 +216,29 @@ clusters.
 ```
 
 #### Total Count (Unique)
-  * pentagrams: **`r countAboveFrequency(wf.5, 0)`**
-  * quadgrams: **`r countAboveFrequency(wf.4, 0)`**
-  * trigrams: **`r countAboveFrequency(wf.3, 0)`**
-  * bigrams: **`r countAboveFrequency(wf.2, 0)`**
-  * words: **`r countAboveFrequency(wf.1, 0)`**
+  * pentagrams: **195297**
+  * quadgrams: **201839**
+  * trigrams: **194413**
+  * bigrams: **132109**
+  * words: **24475**
 
 ####  Occurring More Than Once
-  * pentagrams: **`r countAboveFrequency(wf.5, 1)`**
-  * quadgrams: **`r countAboveFrequency(wf.4, 1)`**
-  * trigrams: **`r countAboveFrequency(wf.3, 1)`**
-  * bigrams: **`r countAboveFrequency(wf.2, 1)`**
-  * words: **`r countAboveFrequency(wf.1, 1)`**
+  * pentagrams: **439**
+  * quadgrams: **2242**
+  * trigrams: **9720**
+  * bigrams: **21805**
+  * words: **10727**
 
 #### Occurring More Than Twice
-  * pentagrams: **`r countAboveFrequency(wf.5, 2)`**
-  * quadgrams: **`r countAboveFrequency(wf.4, 2)`**
-  * trigrams: **`r countAboveFrequency(wf.3, 2)`**
-  * bigrams: **`r countAboveFrequency(wf.2, 2)`**
-  * words: **`r countAboveFrequency(wf.1, 2)`**
+  * pentagrams: **63**
+  * quadgrams: **504**
+  * trigrams: **3383**
+  * bigrams: **10510**
+  * words: **7270**
 
 
-```{r optimization.prune}
+
+```r
   # prune the word frequencies, removing entries w/ frequency < count
   prune <- function(wf, count) {
     wf[wf$freq > count, ]
@@ -288,41 +262,142 @@ clusters.
 
 ### Prediction Functions/Algorithm
 
-```{r predict.prepare}
+
+```r
   r <- 10 # frequency span for last-resort randomization
   nf <- list("f1"=wf.1, "f2"=wf.2, "f3"=wf.3, "f4"=wf.4, "f5"=wf.5, "r"=r)
 
   # this file is used by the text-prediction shiny application
   # as it encapsulates everything needed for textPrediction::predictNext()
 #  save(nf, file="nFreq.Rda") # save the ngram frequencies to disk
+  load("nFreq-50000-2-2-2-2-2.Rda")
 ```
 
 ### Prediction Tests (Unit Tests)
 
-```{r predict.test}
 
+```r
   # 4-gram matches
   predictNext("could be a", nf)
+```
+
+```
+## [1] "very"
+```
+
+```r
   predictNext("i have to say thanks for the", nf)
+```
+
+```
+## [1] "follow"
+```
+
+```r
   predictNext("a few years", nf)
+```
+
+```
+## [1] "ago"
+```
+
+```r
   predictNext("the first time", nf)
+```
+
+```
+## [1] "i"
+```
+
+```r
   predictNext("i am so", nf)
+```
+
+```
+## [1] "excited"
+```
+
+```r
   predictNext("ejefiei i am so", nf)
-  
+```
+
+```
+## [1] "excited"
+```
+
+```r
   # 3-gram matches
   predictNext("be a", nf)
-  predictNext("can not", nf)
-  predictNext("no matter", nf)
-  predictNext("jefjieie no matter", nf)
+```
 
+```
+## [1] "good"
+```
+
+```r
+  predictNext("can not", nf)
+```
+
+```
+## [1] "wait"
+```
+
+```r
+  predictNext("no matter", nf)
+```
+
+```
+## [1] "how"
+```
+
+```r
+  predictNext("jefjieie no matter", nf)
+```
+
+```
+## [1] "how"
+```
+
+```r
   # 2-gram matches
   predictNext("a", nf)
-  predictNext("will", nf)
-  predictNext("could", nf)
-  predictNext("ejfejke could", nf)
+```
 
+```
+## [1] "lot"
+```
+
+```r
+  predictNext("will", nf)
+```
+
+```
+## [1] "be"
+```
+
+```r
+  predictNext("could", nf)
+```
+
+```
+## [1] "not"
+```
+
+```r
+  predictNext("ejfejke could", nf)
+```
+
+```
+## [1] "not"
+```
+
+```r
   # non-matches
   predictNext("jkefjiee", nf)
+```
+
+```
+## [1] "have"
 ```
 
 ### Accuracy Tests
@@ -332,7 +407,8 @@ The last word is excluded and the prediction model called on
 the string. The actual last word is then compared with the predicted
 last word, to guage the accuracy of the model.
 
-```{r predict.accuracy}
+
+```r
   # extract a random substring of the provided text
   #   text - a string of characters containing words
   #
@@ -366,20 +442,15 @@ last word, to guage the accuracy of the model.
   accuracy <- success * 100 / (length(filtered.test) - invalid)
 ```
 
-# accuracies
-#  ~7-8% - load("nFreq-10000-1-1-1-1-1.Rda")
-#  ~7-8% - load("nFreq-20000-1-1-1-1-1.Rda")    9 MB
-#     9% - load("nFreq-50000-2-2-2-2-2.Rda")    977 K
+**100** strings were set aside in a test dataset.
 
-**`r length(filtered.test)`** strings were set aside in a test dataset.
-
-**`r length(filtered.test) - invalid`** test strings were valid / testable.
+**100** test strings were valid / testable.
 
 Substrings were randomly selected from the test data and the model 
 successfully predicted the actual last word of the substring
-**`r success`** of **`r 100 - invalid`** times.
+**9** of **100** times.
 
-The measured accuracy of the model is **`r round(accuracy, digits=2)`%**.
+The measured accuracy of the model is **9%**.
   
 
 ## Next Steps
@@ -397,7 +468,8 @@ The measured accuracy of the model is **`r round(accuracy, digits=2)`%**.
 
 
 
-```{r other}
+
+```r
 #  tdm <-
 #    TermDocumentMatrix(filtered, control=list(tokenize =
 #      BigramTokenizer))
@@ -430,5 +502,4 @@ The measured accuracy of the model is **`r round(accuracy, digits=2)`%**.
 
   # remove emoticons
 #  filtered <- tm_map(filtered, removeWords, emoticons)
-
 ```
