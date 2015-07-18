@@ -267,26 +267,6 @@ clusters.
   * words: **`r countAboveFrequency(wf.1, 2)`**
 
 
-```{r optimization.prune}
-  # prune the word frequencies, removing entries w/ frequency < count
-  prune <- function(wf, count) {
-    wf[wf$freq > count, ]
-  }
-
-  prune.threshold = 3
-
-  wf.5.pruned <- prune(wf.5, prune.threshold)
-  wf.4.pruned <- prune(wf.4, prune.threshold)
-  wf.3.pruned <- prune(wf.3, prune.threshold)
-  wf.2.pruned <- prune(wf.2, prune.threshold)
-  wf.1.pruned <- prune(wf.1, prune.threshold)
-
-
-#!!!
-  # dtm.1 <- DocumentTermMatrix(filtered, control=list(bounds=list(global=c(10, Inf))))
-```
-
-
 ## Prediction
 
 ### Prediction Functions/Algorithm
@@ -392,47 +372,3 @@ The measured accuracy of the model is **`r round(accuracy, digits=2)`%**.
 
 * increase size of ngrams stored
 
-* prune the ngrams, see !!! above
-
-* optimize
-
-* remove code from display
-
-
-
-
-```{r other}
-#  tdm <-
-#    TermDocumentMatrix(filtered, control=list(tokenize =
-#      BigramTokenizer))
-#  inspect(tdm)
-
-  customPunctuation <- function (x, preserve_intra_word_dashes = FALSE) {
-    rpunct <- function(x) {
-      x <- gsub("'", "\002", x)
-      x <- gsub("[[:punct:]]+", "", x)
-      gsub("\002", "'", x, fixed = TRUE)
-    }
-    if(preserve_intra_word_dashes) {
-      x <- gsub("(\\w)-(\\w)", "\\1\001\\2", x)
-      x <- rpunct(x)
-      gsub("\001", "-", x, fixed = TRUE)
-    } else {
-      rpunct(x)
-    }
-  }
-#  filtered <- tm_map(filtered, customPunctuation, preserve_intra_word_dash=T)
-
-
-  # emoticons (https://en.wikipedia.org/wiki/List_of_emoticons)
-  emoticons <- c(":-)", ":)", ":D", ":o)", ":]",
-  ":3", ":c)", ":>", "=]", "8)", "=)", ":}", ":^)", ":-D", "8-D", "8D", "x-D", "xD", "X-D", "XD", "=-D", "=D", "=-3",
-  "=3", "B^D", ":-))", ">:[", ":-(", ":(", ":-c", ":c", ":-<", ":<", ":-[", ":[", ":{", ";(", ":-||", ":@", ">:(", ":'-(", ":'(", ":'-)", ":')", "D:<", "D:", "D8", "D;",
-  "D=", "DX", "v.v", "D-':", ">:O", ":-O", ":O", ":-o", ":o", "8-0", "O_O", "o-o", "O_o", "o_O", "o_o", "O-O", ";D", ">:P", ":-P", ":P", "X-P", "x-p", "xp", "XP", ":-p", ":p", 
-  "=p", ":-b", ":b", "d:", ":L", "=L", ":S", ":-X", ":X", ":-#", ":#", "O:-)", "0:-3", "0:3", "0:-)", "0:)", "0;^)", ":-J", "|-O", 
-  "<3", "</3")
-
-  # remove emoticons
-#  filtered <- tm_map(filtered, removeWords, emoticons)
-
-```

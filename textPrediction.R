@@ -105,8 +105,8 @@ findBestMatches <- function(words, nf, count) {
     f <- head(nf[grep(paste("^", words.pre, " ", sep=""), nf$word), ], count)
     # strip away the search words from all the results
     r <- gsub(paste("^", words.pre, " ", sep=""), "", as.character(f$word))
-    # filter incomplete word suggestions
-    r[!r %in% c("s")]
+    # filter incomplete word suggestions and filtering artifacts
+    r[!r %in% c("s", "<", ">", ":", "-", "o")]
 }
   
 ## given an input text, return the predicted next word
