@@ -26,10 +26,8 @@ TSIZE <- 1000000 # reduce the in-memory size of vcorpus from ~16GB to 4GB
 ## constant representing the size of corpus used to generate ngrams
 ##   too large and 'tm' can't handle all the word combination permutations
 ##   too small and common ngrams don't occur at sufficient frequency
-# fixed 
-# 200000 - causes "NAs produced by integer overflow" on dtm's (fixed w/ slam)
-# 500000 - causes illegal memory access
-FSIZE <- 200000 # much larger and sparse matrix creation takes hours
+##    > 500000 - causes illegal memory access errors
+FSIZE <- 200000 # much larger and sparse matrix creation takes too long
 
 
 ## data sources

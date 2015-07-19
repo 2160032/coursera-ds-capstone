@@ -285,27 +285,27 @@ clusters.
 ```{r predict.test}
 
   # 4-gram matches
-  predictNext("could be a", nf)
-  predictNext("i have to say thanks for the", nf)
-  predictNext("a few years", nf)
-  predictNext("the first time", nf)
-  predictNext("i am so", nf)
-  predictNext("ejefiei i am so", nf)
+  predictNextWord("could be a", nf)
+  predictNextWord("i have to say thanks for the", nf)
+  predictNextWord("a few years", nf)
+  predictNextWord("the first time", nf)
+  predictNextWord("i am so", nf)
+  predictNextWord("ejefiei i am so", nf)
   
   # 3-gram matches
-  predictNext("be a", nf)
-  predictNext("can not", nf)
-  predictNext("no matter", nf)
-  predictNext("jefjieie no matter", nf)
+  predictNextWord("be a", nf)
+  predictNextWord("can not", nf)
+  predictNextWord("no matter", nf)
+  predictNextWord("jefjieie no matter", nf)
 
   # 2-gram matches
-  predictNext("a", nf)
-  predictNext("will", nf)
-  predictNext("could", nf)
-  predictNext("ejfejke could", nf)
+  predictNextWord("a", nf)
+  predictNextWord("will", nf)
+  predictNextWord("could", nf)
+  predictNextWord("ejfejke could", nf)
 
   # non-matches
-  predictNext("jkefjiee", nf)
+  predictNextWord("jkefjiee", nf)
 ```
 
 ### Accuracy Tests
@@ -339,7 +339,7 @@ last word, to guage the accuracy of the model.
     # exclude testing texts with only a single word (e.g. nothing to predict!)
     if(wordCount(testText) > 1) {
       ts <- randomSubstring(testText)
-      if(predictNext(ts$sub, nf)[1] == ts$nxt) success = success + 1
+      if(predictNextWord(ts$sub, nf)[1] == ts$nxt) success = success + 1
     }
     else {
       invalid <- invalid + 1 # count of invalid tests

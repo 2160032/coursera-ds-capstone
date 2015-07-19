@@ -106,7 +106,7 @@ findBestMatches <- function(words, nf, count) {
     # strip away the search words from all the results
     r <- gsub(paste("^", words.pre, " ", sep=""), "", as.character(f$word))
     # filter incomplete word suggestions and filtering artifacts
-    r[!r %in% c("s", "<", ">", ":", "-", "o")]
+    r[!r %in% c("s", "<", ">", ":", "-", "o", "j", "c", "m")]
 }
   
 ## given an input text, return the predicted next word
@@ -115,7 +115,7 @@ findBestMatches <- function(words, nf, count) {
 ##
 ## returns a character string containing the predicted next word
 ##
-predictNext <- function(text, nfl, count=1) {
+predictNextWord <- function(text, nfl, count=1) {
     text.wc <- wordCount(text)
 
     prediction <- NULL
@@ -138,8 +138,21 @@ predictNext <- function(text, nfl, count=1) {
 }
 
 ## clean the input text and perform prediction
-cleanPredictNext <- function(text, nfl, count=1) {
+cleanPredictNextWord <- function(text, nfl, count=1) {
     text <- as.character(createCleanCorpus(text)[[1]], remove.punct=TRUE)
-    predictNext(text, nfl, count)
+    predictNextWord(text, nfl, count)
 }
 
+## given an input text, predict the current word
+##   text - a character string containing a portion of a word
+##   nfl - n-gram frequency dataframes list
+##
+## returns a character string containing the predicted current word
+##
+predictCurrentWord <- function(text, nfl, count=1) {
+    current <- as.character(createCleanCorpus(lastWords(text, 1))[[1]])
+    nf <- nfl$f1
+    # matching ngrams that start with the provided letters
+    f <- head(nf[grep(paste("^", current, sep=""), nf$word), ], count)
+    as.character(head(f$word, count))
+}

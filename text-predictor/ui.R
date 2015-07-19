@@ -18,10 +18,15 @@ shinyUI(navbarPage("Text Predictor",
         sliderInput("suggestions", "Word Suggestions", 
                     value=1.0, min=1.0, max=5.0, step=1.0)
       ),
-      column(4,
-        h3("Next Word Prediction(s)"),
+      column(2,
+        h3("Current Word"),
         HTML("<br>"),
-        verbatimTextOutput('prediction')
+        verbatimTextOutput('word.current')
+      ),
+      column(2,
+        h3("Next Word"),
+        HTML("<br>"),
+        verbatimTextOutput('word.next')
       )
     )
   ),
