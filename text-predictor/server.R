@@ -39,7 +39,7 @@ shinyServer(
             # if not a space, but matches a word, also predict the next word
             else if(!is.null(pcw) && lastWords(text.in, 1) %in% pcw)
                 output$word.next=renderPrint(
-                    cat(cleanPredictNextWord(pcw[1], nf, count), sep="\n"))
+                    cat(cleanPredictNextWord(text.in, nf, count), sep="\n"))
             # otherwise, blank the next word prediction
             else
                 output$word.next=renderPrint(cat(""))
