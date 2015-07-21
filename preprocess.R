@@ -29,6 +29,9 @@ TSIZE <- 1000000 # reduce the in-memory size of vcorpus from ~16GB to 4GB
 ##    > 500000 - causes illegal memory access errors
 FSIZE <- 200000 # much larger and sparse matrix creation takes too long
 
+## constant representing the size of corpus used for accuracy testing
+TSIZE<- 100
+
 
 ## data sources
 
@@ -46,11 +49,24 @@ texts.reduced <- sample(c(blogs, news, twitter), TSIZE, replace=FALSE)
 rm(blogs, twitter, news)
 
 ## perform all transformations on the data and produce a 'tm' corpus
-filtered <- createCleanCorpus(texts.reduced)
-##save(filtered, "filtered.Rda")
+## copies both with and without punctuation are useful
+## profanity, via http://fffff.at/googles-official-list-of-bad-words/
+profanity <- as.character(read.csv("profanity.txt", header=FALSE)$V1)
+filtered <- createCleanCorpus(texts.reduced, remove.punct=FALSE, remove.profanity=TRUE, profanity)
+filtered.np <- createCleanCorpus(texts.reduced, remove.punct=TRUE, remove.profanity=TRUE, profanity)
+
+# save to disk for future use
+save(filtered, file="filtered-1000000-wp.Rda")
+save(filtered.np, file="filtered-1000000-np.Rda")
 
 ## further reduce the size of the filtered dataset for ngram processing
 filtered.sub <- sample(filtered, FSIZE, replace=FALSE)
+filtered.sub.np <- sample(filtered.np, FSIZE, replace=FALSE)
+filtered.test <- sample(filtered.np, TSIZE, replace=FALSE)
+
+# remove the original sets to save ~8GB
+rm(filtered)
+rm(filtered.np)
 
 # n-gram tokenizers
 BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min=2, max=2))
@@ -64,15 +80,12 @@ PentagramTokenizer <- function(x, n) NGramTokenizer(x, Weka_control(min=5, max=5
 options(mc.cores=1) # limit cores to prevent rweka processing problems
 
 ft.1 <- 10
-dtm.1 <- DocumentTermMatrix(filtered.sub, control=list(bounds=list(global=c(ft.1, Inf))))
+dtm.1 <- DocumentTermMatrix(filtered.sub.np, control=list(bounds=list(global=c(ft.1, Inf))))
 freq.1 <- sort(col_sums(dtm.1, na.rm=T), decreasing=TRUE)
 nf.1 <- data.frame(word=names(freq.1), freq=freq.1)
 
 ft.2 <- 2
 dtm.2 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=BigramTokenizer, bounds=list(global=c(ft.2, Inf))))
-## product of rows*columns exceeds max vector size
-##freq.2 <- sort(colSums(as.matrix(ph.dtm.2)), decreasing=TRUE)
-## use slam::col_sums instead
 freq.2 <- sort(col_sums(dtm.2, na.rm=T), decreasing=TRUE)
 nf.2 <- data.frame(word=names(freq.2), freq=freq.2)
 
@@ -95,5 +108,11 @@ nf.5 <- data.frame(word=names(freq.5), freq=freq.5)
 r <- 10 # frequency span for last-resort randomization
 nf <- list("f1"=nf.1, "f2"=nf.2, "f3"=nf.3, "f4"=nf.4, "f5"=nf.5, "r"=r)
 
-# save the ngram frequencies to disk
-save(nf, file="nFreq.Rda") 
+## save the ngram frequencies to disk
+nfname <- paste("data/nFreq", sprintf("%d", FSIZE), ft.1, ft.2, ft.3, ft.4, ft.5, sep="-")
+save(nf, file=paste(nfname, "Rda", sep="."))
+
+
+## product of rows*columns exceeds max vector size
+##freq.2 <- sort(colSums(as.matrix(ph.dtm.2)), decreasing=TRUE)
+## use slam::col_sums instead

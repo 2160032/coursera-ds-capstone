@@ -52,10 +52,18 @@ There are 3 documents in the English text samples.
 ## Cleaning and Transformation
 
 ```r
-  filtered <- createCleanCorpus(texts.training)
-  filtered.test <- createCleanCorpus(texts.testing)
+  ## profanity, via http://fffff.at/googles-official-list-of-bad-words/
+  profanity <- as.character(read.csv("profanity.txt", header=FALSE)$V1)
+  # for unigrams, remove punctuation
+  filtered.sub.np <- createCleanCorpus(texts.training,
+    remove.punct=TRUE, remove.profanity=TRUE, profanity)
+  # for generating predictive corpus, leave punctuation. tm/dtm uses.
+  filtered.sub <- createCleanCorpus(texts.training,
+    remove.punct=FALSE, remove.profanity=TRUE, profanity)
+  # for generating test text, remove punctuation
+  filtered.test <- createCleanCorpus(texts.testing, remove.punct=TRUE)
 
-  filtered
+  filtered.sub
 ```
 
 ```
@@ -83,11 +91,11 @@ analyzing word frequencies and characteristics.
   fthreshold <- 20 # frequency list entry threshold
   # minfreq <- 3 # too large. produces dim: 500000x229481 > 4503599627370496
   minfreq <- 10 # minimum required doc frequency for dtm
-  dtm.1 <- DocumentTermMatrix(filtered, control=list(minDocFreq=minfreq))
+  dtm.1 <- DocumentTermMatrix(filtered.sub.np, control=list(minDocFreq=minfreq))
   freq.1 <- sort(colSums(as.matrix(dtm.1)), decreasing=TRUE)
-  wf.1 <- data.frame(word=names(freq.1), freq=freq.1)
+  nf.1 <- data.frame(word=names(freq.1), freq=freq.1)
   
-  findFreqTerms(dtm.1, lowfreq=wf.1$freq[fthreshold])
+  findFreqTerms(dtm.1, lowfreq=nf.1$freq[fthreshold])
 ```
 
 ```
@@ -98,7 +106,7 @@ analyzing word frequencies and characteristics.
 
 ```r
   # plot frequencies
-  ggplot(subset(wf.1, freq>wf.1$freq[fthreshold]),
+  ggplot(subset(nf.1, freq>nf.1$freq[fthreshold]),
     aes(reorder(word, freq), freq)) +
     geom_bar(stat="identity") + 
     theme(axis.text.x=element_text(angle=45, hjust=1)) +
@@ -115,8 +123,8 @@ analyzing word frequencies and characteristics.
 ```
 
 ```
-##  [1] "aaaand"  "aaawww"  "aahha"   "aahsl"   "aam"     "aardman" "aarons" 
-##  [8] "aarp"    "abab"    "aback"
+##  [1] "-nilly"     "-pat"       "-up"        "-vixen"     "a-buzz"    
+##  [6] "a-coming"   "a-gallon"   "a-hole"     "a-line"     "a-ma-zi-ng"
 ```
 
 ### Wordcloud
@@ -165,128 +173,88 @@ clusters.
  
   gthreshold <- 15 # threshold for number of gram matches to display
   options(mc.cores=1) # limit cores to prevent rweka processing problems
-  
-  dtm.2 <-
-    DocumentTermMatrix(filtered, control=list(tokenize=BigramTokenizer))
-  freq.2 <- sort(colSums(as.matrix(dtm.2)), decreasing=TRUE)
-  wf.2 <- data.frame(word=names(freq.2), freq=freq.2)
-  plotGram(gthreshold, freq.2, wf.2, "Bigram")
+
+  ft.2 <- 3
+  dtm.2 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=BigramTokenizer, bounds=list(global=c(ft.2, Inf))))
+  freq.2 <- sort(col_sums(dtm.2, na.rm=T), decreasing=TRUE)
+  nf.2 <- data.frame(word=names(freq.2), freq=freq.2)
+  plotGram(gthreshold, freq.2, nf.2, "Bigram")
 ```
 
 ![](capstone_files/figure-html/explore.ngrams-1.png) 
 
 ```r
-  dtm.3 <-
-    DocumentTermMatrix(filtered, control=list(tokenize=TrigramTokenizer))
-  freq.3 <- sort(colSums(as.matrix(dtm.3)), decreasing=TRUE)
-  wf.3 <- data.frame(word=names(freq.3), freq=freq.3)
-  plotGram(gthreshold, freq.3, wf.3, "Trigram")
+  ft.3 <- 3
+  dtm.3 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=TrigramTokenizer, bounds=list(global=c(ft.3, Inf))))
+  freq.3 <- sort(col_sums(dtm.3, na.rm=T), decreasing=TRUE)
+  nf.3 <- data.frame(word=names(freq.3), freq=freq.3)
+  plotGram(gthreshold, freq.3, nf.3, "Quadgram")
 ```
 
 ![](capstone_files/figure-html/explore.ngrams-2.png) 
 
 ```r
-  dtm.4 <-
-    DocumentTermMatrix(filtered, control=list(tokenize=QuadgramTokenizer))
-  freq.4 <- sort(colSums(as.matrix(dtm.4)), decreasing=TRUE)
-  wf.4 <- data.frame(word=names(freq.4), freq=freq.4)
-  plotGram(gthreshold, freq.4, wf.4, "Quadgram")
+  ft.4 <- 2 
+  dtm.4 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=QuadgramTokenizer, bounds=list(global=c(ft.4, Inf))))
+  freq.4 <- sort(col_sums(dtm.4, na.rm=T), decreasing=TRUE)
+  nf.4 <- data.frame(word=names(freq.4), freq=freq.4)
+  plotGram(gthreshold, freq.4, nf.4, "Quadgram")
 ```
 
 ![](capstone_files/figure-html/explore.ngrams-3.png) 
 
 ```r
-  dtm.5 <-
-    DocumentTermMatrix(filtered, control=list(tokenize=PentagramTokenizer))
-  freq.5 <- sort(colSums(as.matrix(dtm.5)), decreasing=TRUE)
-  wf.5 <- data.frame(word=names(freq.5), freq=freq.5)
-  plotGram(gthreshold, freq.5, wf.5, "Quadgram")
+  ft.5 <- 2
+  dtm.5 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=PentagramTokenizer, bounds=list(global=c(ft.5, Inf))))
+  freq.5 <- sort(col_sums(dtm.5, na.rm=T), decreasing=TRUE)
+  nf.5 <- data.frame(word=names(freq.5), freq=freq.5)
+  plotGram(gthreshold, freq.5, nf.5, "Pentagram")
 ```
 
 ![](capstone_files/figure-html/explore.ngrams-4.png) 
+
+
+```r
+#  r <- 10 # frequency span for last-resort randomization
+#  nf <- list("f1"=nf.1, "f2"=nf.2, "f3"=nf.3, "f4"=nf.4, "f5"=nf.5, "r"=r)
+#  save(nf, file="nFreq.Rda") # save the ngram frequencies to disk
+  load("nFreq-200000-10-3-3-2-2.Rda")
+```
 
 ### N-Gram Distribution
 
 
 ```r
   # return the number of entries with frequency exceeding count
-  countAboveFrequency <- function(wf, count) {
-    dim(wf[wf$freq > count, ])[1]
+  countAboveFrequency <- function(nf, count) {
+    dim(nf[nf$freq > count, ])[1]
   }
 ```
 
 #### Total Count (Unique)
-  * pentagrams: **195297**
-  * quadgrams: **201839**
-  * trigrams: **194413**
-  * bigrams: **132109**
-  * words: **24475**
-
-####  Occurring More Than Once
-  * pentagrams: **439**
-  * quadgrams: **2242**
-  * trigrams: **9720**
-  * bigrams: **21805**
-  * words: **10727**
-
-#### Occurring More Than Twice
-  * pentagrams: **63**
-  * quadgrams: **504**
-  * trigrams: **3383**
-  * bigrams: **10510**
-  * words: **7270**
-
-
-
-```r
-  # prune the word frequencies, removing entries w/ frequency < count
-  prune <- function(wf, count) {
-    wf[wf$freq > count, ]
-  }
-
-  prune.threshold = 3
-
-  wf.5.pruned <- prune(wf.5, prune.threshold)
-  wf.4.pruned <- prune(wf.4, prune.threshold)
-  wf.3.pruned <- prune(wf.3, prune.threshold)
-  wf.2.pruned <- prune(wf.2, prune.threshold)
-  wf.1.pruned <- prune(wf.1, prune.threshold)
-
-
-#!!!
-  # dtm.1 <- DocumentTermMatrix(filtered, control=list(bounds=list(global=c(10, Inf))))
-```
+  * pentagrams: **345**
+  * quadgrams: **2064**
+  * trigrams: **3387**
+  * bigrams: **10421**
+  * words: **24485**
 
 
 ## Prediction
-
-### Prediction Functions/Algorithm
-
-
-```r
-  r <- 10 # frequency span for last-resort randomization
-  nf <- list("f1"=wf.1, "f2"=wf.2, "f3"=wf.3, "f4"=wf.4, "f5"=wf.5, "r"=r)
-
-  # this file is used by the text-prediction shiny application
-  # as it encapsulates everything needed for textPrediction::predictNext()
-#  save(nf, file="nFreq.Rda") # save the ngram frequencies to disk
-  load("nFreq-50000-2-2-2-2-2.Rda")
-```
 
 ### Prediction Tests (Unit Tests)
 
 
 ```r
   # 4-gram matches
-  predictNext("could be a", nf)
+  predictNextWord("could be a", nf)
 ```
 
 ```
-## [1] "very"
+## [1] "good"
 ```
 
 ```r
-  predictNext("i have to say thanks for the", nf)
+  predictNextWord("i have to say thanks for the", nf)
 ```
 
 ```
@@ -294,7 +262,7 @@ clusters.
 ```
 
 ```r
-  predictNext("a few years", nf)
+  predictNextWord("a few years", nf)
 ```
 
 ```
@@ -302,15 +270,15 @@ clusters.
 ```
 
 ```r
-  predictNext("the first time", nf)
+  predictNextWord("the first time", nf)
 ```
 
 ```
-## [1] "i"
+## [1] "in"
 ```
 
 ```r
-  predictNext("i am so", nf)
+  predictNextWord("i am so", nf)
 ```
 
 ```
@@ -318,7 +286,7 @@ clusters.
 ```
 
 ```r
-  predictNext("ejefiei i am so", nf)
+  predictNextWord("ejefiei i am so", nf)
 ```
 
 ```
@@ -327,7 +295,7 @@ clusters.
 
 ```r
   # 3-gram matches
-  predictNext("be a", nf)
+  predictNextWord("be a", nf)
 ```
 
 ```
@@ -335,7 +303,7 @@ clusters.
 ```
 
 ```r
-  predictNext("can not", nf)
+  predictNextWord("can not", nf)
 ```
 
 ```
@@ -343,7 +311,7 @@ clusters.
 ```
 
 ```r
-  predictNext("no matter", nf)
+  predictNextWord("no matter", nf)
 ```
 
 ```
@@ -351,7 +319,7 @@ clusters.
 ```
 
 ```r
-  predictNext("jefjieie no matter", nf)
+  predictNextWord("jefjieie no matter", nf)
 ```
 
 ```
@@ -360,7 +328,7 @@ clusters.
 
 ```r
   # 2-gram matches
-  predictNext("a", nf)
+  predictNextWord("a", nf)
 ```
 
 ```
@@ -368,7 +336,7 @@ clusters.
 ```
 
 ```r
-  predictNext("will", nf)
+  predictNextWord("will", nf)
 ```
 
 ```
@@ -376,7 +344,7 @@ clusters.
 ```
 
 ```r
-  predictNext("could", nf)
+  predictNextWord("could", nf)
 ```
 
 ```
@@ -384,7 +352,7 @@ clusters.
 ```
 
 ```r
-  predictNext("ejfejke could", nf)
+  predictNextWord("ejfejke could", nf)
 ```
 
 ```
@@ -393,11 +361,11 @@ clusters.
 
 ```r
   # non-matches
-  predictNext("jkefjiee", nf)
+  predictNextWord("jkefjiee", nf)
 ```
 
 ```
-## [1] "have"
+## [1] "and"
 ```
 
 ### Accuracy Tests
@@ -409,97 +377,70 @@ last word, to guage the accuracy of the model.
 
 
 ```r
-  # extract a random substring of the provided text
-  #   text - a string of characters containing words
-  #
-  # returns both a substring and the actual next word, for prediction testing
-  randomSubstring <- function(text) {
-    # convert characters to a vector
-    wv <- unlist(strsplit(text, " "))
-    wv.start <- as.integer(runif(1, 1, length(wv) - 1))
-    wv.length <- as.integer(runif(1, 1, length(wv) - wv.start + 1))
-    wv.sub <- paste(wv[wv.start:(wv.start + wv.length - 1)], collapse=" ")
-    wv.next <- paste(wv[(wv.start + wv.length):(wv.start + wv.length)], collapse=" ")
-
-    list("sub"=wv.sub, "nxt"=wv.next)
-  }
-
-  success <- 0
-  invalid <- 0
-  for(i in 1:length(filtered.test)) {
-    testText <- filtered.test[[i]]$content
-
-    # exclude testing texts with only a single word (e.g. nothing to predict!)
-    if(wordCount(testText) > 1) {
-      ts <- randomSubstring(testText)
-      if(predictNext(ts$sub, nf)[1] == ts$nxt) success = success + 1
-    }
-    else {
-      invalid <- invalid + 1 # count of invalid tests
-    }
-  }
-
-  accuracy <- success * 100 / (length(filtered.test) - invalid)
+  test.result <- testTimeAccuracy(filtered.test, nf)
 ```
 
 **100** strings were set aside in a test dataset.
 
-**100** test strings were valid / testable.
-
 Substrings were randomly selected from the test data and the model 
-successfully predicted the actual last word of the substring
-**9** of **100** times.
+used to predict the last word of the substring.
 
-The measured accuracy of the model is **9%**.
-  
+The measured accuracy of the model is **7%**.
 
-## Next Steps
-
-* apply same filters to input as output (lowercase, contractions)
-
-* increase size of ngrams stored
-
-* prune the ngrams, see !!! above
-
-* optimize
-
-* remove code from display
+The average speed of the algorithm is **2.0857\times 10^{4}ms** per word prediction.
 
 
+## Optimizations 
+
+### Test Results - Accuracy, Response Time and Dataset Size
+
+* 10K texts, quadgrams, all punct stripped
+** 10.1%, 8ms - load("nFreq-10000-1-1-1-1.Rda") 9.4B
+* 10K texts, introduced pentagrams
+** 8.4%, 285ms - load("nFreq-10000-1-1-1-1-1.Rda") 14.1MB
+* 50K texts, <2 rep n-grams dropped
+** 10.8%, 34ms - load("nFreq-50000-2-2-2-2-2.Rda") 1.0MB
+* 50K texts, <10/6/4/3/2 rep n-grams dropped
+** 11.8%, 27ms - load("nFreq-50000-10-6-4-3-2.Rda") 0.7MB
+* 100K texts
+** 12.3%, 37ms - load("nFreq-100000-2-2-2-2-2.Rda") 1.2MB
+* 200K texts, hyphens intact in 1-grams, punct intact in 2+ grams
+** 15.3%, 395ms - load("nFreq-200000-10-2-2-2-2-new.Rda")  11.7 MB
+* w/ profanity removed
+** 15.3%, 395ms - load("nFreq-200000-10-2-2-2-2.Rda")  11.6 MB
+* further optimization, <3 rep 3-grams dropped
+** 15.5%, 353ms - load("nFreq-200000-10-2-3-2-2.Rda")  10.2 MB
+* further optimization, <3 rep 2 and 3-grams dropped
+** 15.2%, 287ms - load("nFreq-200000-10-3-3-2-2.Rda")  9.1 MB
 
 
 
-```r
-#  tdm <-
-#    TermDocumentMatrix(filtered, control=list(tokenize =
-#      BigramTokenizer))
-#  inspect(tdm)
-
-  customPunctuation <- function (x, preserve_intra_word_dashes = FALSE) {
-    rpunct <- function(x) {
-      x <- gsub("'", "\002", x)
-      x <- gsub("[[:punct:]]+", "", x)
-      gsub("\002", "'", x, fixed = TRUE)
-    }
-    if(preserve_intra_word_dashes) {
-      x <- gsub("(\\w)-(\\w)", "\\1\001\\2", x)
-      x <- rpunct(x)
-      gsub("\001", "-", x, fixed = TRUE)
-    } else {
-      rpunct(x)
-    }
-  }
-#  filtered <- tm_map(filtered, customPunctuation, preserve_intra_word_dash=T)
+>
+> save(nf, file="nFreq-200000-10-2-2-2-2-new.Rda")
+> dim(nf.1)
+[1] 19050     2
+> dim(nf.2)
+[1] 340191      2
+> dim(nf.3)
+[1] 319739      2
+> dim(nf.4)
+[1] 135801      2
+> dim(nf.5)
+[1] 41407     2
+>
 
 
-  # emoticons (https://en.wikipedia.org/wiki/List_of_emoticons)
-  emoticons <- c(":-)", ":)", ":D", ":o)", ":]",
-  ":3", ":c)", ":>", "=]", "8)", "=)", ":}", ":^)", ":-D", "8-D", "8D", "x-D", "xD", "X-D", "XD", "=-D", "=D", "=-3",
-  "=3", "B^D", ":-))", ">:[", ":-(", ":(", ":-c", ":c", ":-<", ":<", ":-[", ":[", ":{", ";(", ":-||", ":@", ">:(", ":'-(", ":'(", ":'-)", ":')", "D:<", "D:", "D8", "D;",
-  "D=", "DX", "v.v", "D-':", ">:O", ":-O", ":O", ":-o", ":o", "8-0", "O_O", "o-o", "O_o", "o_O", "o_o", "O-O", ";D", ">:P", ":-P", ":P", "X-P", "x-p", "xp", "XP", ":-p", ":p", 
-  "=p", ":-b", ":b", "d:", ":L", "=L", ":S", ":-X", ":X", ":-#", ":#", "O:-)", "0:-3", "0:3", "0:-)", "0:)", "0;^)", ":-J", "|-O", 
-  "<3", "</3")
+10-3-3-2-2
 
-  # remove emoticons
-#  filtered <- tm_map(filtered, removeWords, emoticons)
-```
+> dim(nf$f1)
+[1] 18936     2
+> dim(nf$f2)
+[1] 199966      2
+> dim(nf$f3)
+[1] 150489      2
+> dim(nf$f4)
+[1] 139984      2
+> dim(nf$f5)
+[1] 43024     2
+>
+>

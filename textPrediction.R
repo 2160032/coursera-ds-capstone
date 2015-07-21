@@ -33,7 +33,7 @@ removeSpecial <- content_transformer(function(x)
 ## given a set of texts, apply cleaning transformations
 ## and return a tm corpus containing the documents
 ##
-createCleanCorpus <- function(texts, remove.punct=TRUE) {
+createCleanCorpus <- function(texts, remove.punct=TRUE, remove.profanity=FALSE, profanity=NULL) {
     texts <- expandContractions(texts)
     filtered <- VCorpus(VectorSource(texts))
   
@@ -51,9 +51,15 @@ createCleanCorpus <- function(texts, remove.punct=TRUE) {
 
     # conditionally remove punctuation
     if(remove.punct) {
-        filtered <- tm_map(filtered, removePunctuation)
+        filtered <- tm_map(filtered, removePunctuation,
+                           preserve_intra_word_dashes=TRUE)
     }
 
+    # remove profanity
+    if(remove.profanity) {
+        filtered <- tm_map(filtered, removeWords, profanity)
+    }
+    
     # strip excess whitespace
     filtered <- tm_map(filtered, stripWhitespace)
 }
@@ -156,3 +162,48 @@ predictCurrentWord <- function(text, nfl, count=1) {
     f <- head(nf[grep(paste("^", current, sep=""), nf$word), ], count)
     as.character(head(f$word, count))
 }
+
+
+### testing
+
+## test the timing and accuracy of predictions on a set of test strings
+##   corpus.test - a tm corpus of test strings
+##   nfl - n-gram frequency dataframes list
+## returns the accuracy as the fraction correctly predicted and the proc.time
+## 
+testTimeAccuracy <- function(corpus.test, nfl) {
+  # extract a random substring of the provided text
+  #   text - a string of characters containing words
+  # returns both a substring and the actual next word, for prediction testing
+  randomSubstring <- function(text) {
+    # convert characters to a vector
+    wv <- unlist(strsplit(text, " "))
+    wv.start <- as.integer(runif(1, 1, length(wv) - 1))
+    wv.length <- as.integer(runif(1, 1, length(wv) - wv.start + 1))
+    wv.sub <- paste(wv[wv.start:(wv.start + wv.length - 1)], collapse=" ")
+    wv.next <- paste(wv[(wv.start + wv.length):(wv.start + wv.length)],
+                     collapse=" ")
+    list("sub"=wv.sub, "nxt"=wv.next)
+  }
+
+  ptm <- proc.time()
+  success <- 0
+  invalid <- 0
+  for(i in 1:length(corpus.test)) {
+    testText <- corpus.test[[i]]$content
+
+    # exclude testing texts with only a single word (e.g. nothing to predict!)
+    if(wordCount(testText) > 1) {
+      ts <- randomSubstring(testText)
+      if(predictNextWord(ts$sub, nfl)[1] == ts$nxt) success = success + 1
+    }
+    else {
+      invalid <- invalid + 1 # count of invalid tests
+    }
+  }
+  accuracy <- success / (length(corpus.test) - invalid)
+  time <- proc.time() - ptm
+
+  list("accuracy"=accuracy, "time"=time)
+}
+

@@ -15,6 +15,12 @@ FINAL=capstone
 final:
 	Rscript -e "rmarkdown::render('$(FINAL).Rmd', 'html_document', '$(FINAL).html'); browseURL('$(FINAL).html')"
 
+
+# fetch profanity list
+# (minor formatting changes and saved to data/profanity.txt)
+get_profanity:
+	wget https://gist.github.com/jamiew/1112488
+
 # run shiny server locally
 run_app:
 #	cp nFreq.Rda text-predictor/
