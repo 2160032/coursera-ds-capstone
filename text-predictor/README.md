@@ -14,4 +14,5 @@ Links
 
 * [github repository](https://github.com/pchuck/coursera-ds-capstone)
 * [shiny application](https://pchuck.shinyapps.io/text-predictor)
-* [slidify presentation](http://pchuck.github.io/coursera-ds-capstone)
+* [rpubs final report](http://rpubs.com/pchuck/text-predictor) 
+* [slidify presentation](http://rpubs.com/pchuck/text-predictor-slides)

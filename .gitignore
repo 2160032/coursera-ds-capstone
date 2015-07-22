@@ -17,6 +17,16 @@ capstone_cache/
 # generated files for shiny app
 text-predictor/shinyapps/
 
+# slides generated content
+index.html
+index.md
+libraries/
+
+# rstudio presenter output
+text-predictor-figure/
+text-predictor-rpubs.html
+text-predictor.md
+
 # course notes and downloaded data
 week_1.txt
 data/

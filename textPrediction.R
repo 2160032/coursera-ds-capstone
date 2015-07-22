@@ -69,7 +69,7 @@ createCleanCorpus <- function(texts, remove.punct=TRUE, remove.profanity=FALSE, 
 
 ## ngram plotting function  
 plotGram <- function(threshold, freq, wf, type) {
-    ggplot(subset(wf, freq > wf$freq[threshold]),
+    ggplot(subset(wf, freq >= wf$freq[threshold]),
            aes(reorder(word, freq), freq)) + 
         geom_bar(stat="identity") + 
         theme(axis.text.x=element_text(angle=45, hjust=1)) +
@@ -169,9 +169,10 @@ predictCurrentWord <- function(text, nfl, count=1) {
 ## test the timing and accuracy of predictions on a set of test strings
 ##   corpus.test - a tm corpus of test strings
 ##   nfl - n-gram frequency dataframes list
+## assumes that corpus.test has had createCleanCorpus() applied to it
 ## returns the accuracy as the fraction correctly predicted and the proc.time
 ## 
-testTimeAccuracy <- function(corpus.test, nfl) {
+testTimeAccuracy <- function(corpus.test, nfl, count=1) {
   # extract a random substring of the provided text
   #   text - a string of characters containing words
   # returns both a substring and the actual next word, for prediction testing
@@ -195,7 +196,8 @@ testTimeAccuracy <- function(corpus.test, nfl) {
     # exclude testing texts with only a single word (e.g. nothing to predict!)
     if(wordCount(testText) > 1) {
       ts <- randomSubstring(testText)
-      if(predictNextWord(ts$sub, nfl)[1] == ts$nxt) success = success + 1
+      if(ts$nxt %in% cleanPredictNextWord(ts$sub, nfl, count))
+          success = success + 1
     }
     else {
       invalid <- invalid + 1 # count of invalid tests

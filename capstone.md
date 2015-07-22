@@ -6,11 +6,13 @@ patrick charles
 
 ## Summary
 
-A model and algorithms for text prediction are constructed. This is the final capstone project for the Johns Hopkins data science specialization certification series. 
+This document summarizes work done to construct, test and optimize a model for text prediction.
 
-In this dynamic document, the body of sample texts is loaded, exploratory analysis performed and a model and algorithm for word prediction built.
+A body of sample texts consisting of ~4M documents including tweets, news articles and blog posts are loaded and exploratory analysis performed. Sets of n-grams are extracted from the body of text, predictive algorithms built, and various approaches for improving predictive accuracy refined. 
 
-The [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) sample texts include content captured from blogs, new sources and twitter.
+A cursory analysis of the dataset was presented in the [https://github.com/pchuck/coursera-ds-capstone/blob/master/milestone.md](Milestone 1) report.
+
+This is the final capstone project for the Johns Hopkins data science specialization certification series. The corpus for the analysis is available at [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip).
 
 
 
@@ -20,135 +22,30 @@ The [Capstone Dataset](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset
 
 ### Documents
 
-The English-language content is used for the analysis.
-
-
-```r
-  # view the English sample text source documents
-  cpath <- file.path(".", "data", "final", "en_US")
-  csize <- length(dir(cpath))
-  dir(cpath)
-```
 
 ```
 ## [1] "en_US.blogs.txt"   "en_US.news.txt"    "en_US.twitter.txt"
 ```
 
 
-There are 3 documents in the English text samples.
+The English-language content is used for the analysis. 3 document sets are ingested.
 
 * __blogs__ contains 899288 lines, 37334690 words, and 210160014 characters.
 * __twitter__ contains 2360148 lines, 30374206 words, and 167105338 characters.
 * __news__ contains 1010242 lines, 34372720 words, and 205811889 characters.
 
-### Load Full Corpus of Texts
 
 
 
-### Subset into a Training and Testing Corpus
 
 
-
-## Cleaning and Transformation
-
-```r
-  ## profanity, via http://fffff.at/googles-official-list-of-bad-words/
-  profanity <- as.character(read.csv("profanity.txt", header=FALSE)$V1)
-  # for unigrams, remove punctuation
-  filtered.sub.np <- createCleanCorpus(texts.training,
-    remove.punct=TRUE, remove.profanity=TRUE, profanity)
-  # for generating predictive corpus, leave punctuation. tm/dtm uses.
-  filtered.sub <- createCleanCorpus(texts.training,
-    remove.punct=FALSE, remove.profanity=TRUE, profanity)
-  # for generating test text, remove punctuation
-  filtered.test <- createCleanCorpus(texts.testing, remove.punct=TRUE)
-
-  filtered.sub
-```
-
-```
-## <<VCorpus (documents: 10000, metadata (corpus/indexed): 0/0)>>
-```
-
-```r
-  filtered.test
-```
-
-```
-## <<VCorpus (documents: 100, metadata (corpus/indexed): 0/0)>>
-```
 
 
 ## Exploratory Analysis
 
-A document-term matrix is created from the samples for the purpose of
-analyzing word frequencies and characteristics.
-
-### Most Frequently Occurring Terms
-
-
-```r
-  fthreshold <- 20 # frequency list entry threshold
-  # minfreq <- 3 # too large. produces dim: 500000x229481 > 4503599627370496
-  minfreq <- 10 # minimum required doc frequency for dtm
-  dtm.1 <- DocumentTermMatrix(filtered.sub.np, control=list(minDocFreq=minfreq))
-  freq.1 <- sort(colSums(as.matrix(dtm.1)), decreasing=TRUE)
-  nf.1 <- data.frame(word=names(freq.1), freq=freq.1)
-  
-  findFreqTerms(dtm.1, lowfreq=nf.1$freq[fthreshold])
-```
-
-```
-##  [1] "about" "all"   "and"   "are"   "but"   "for"   "from"  "have" 
-##  [9] "his"   "not"   "out"   "said"  "that"  "the"   "they"  "this" 
-## [17] "was"   "will"  "with"  "you"
-```
-
-```r
-  # plot frequencies
-  ggplot(subset(nf.1, freq>nf.1$freq[fthreshold]),
-    aes(reorder(word, freq), freq)) +
-    geom_bar(stat="identity") + 
-    theme(axis.text.x=element_text(angle=45, hjust=1)) +
-    ggtitle("Most Common Words") + xlab("Word") + ylab("Frequency") 
-```
-
-![](capstone_files/figure-html/explore.terms.freq-1.png) 
-
-### Least Frequently Occurring Terms
-
-
-```r
-  head(findFreqTerms(dtm.1, highfreq=1), 10)
-```
-
-```
-##  [1] "-nilly"     "-pat"       "-up"        "-vixen"     "a-buzz"    
-##  [6] "a-coming"   "a-gallon"   "a-hole"     "a-line"     "a-ma-zi-ng"
-```
-
-### Wordcloud
-
-The wordcloud is a graphical visualization of word occurrence where
-size is scaled by frequency.
-
-
-```r
-  set.seed(482)
-  wordcloud(names(freq.1), freq.1, min.freq=40, max.words=100,
-    colors=brewer.pal(8, "Dark2"), rot.per=0.35, scale=c(5, 0.5))
-```
-
-![](capstone_files/figure-html/explore.terms.wc-1.png) 
-
-### Word Length Frequency
-
-A histogram of number of letters by word frequency illustrates
-the distribution of word lengths and highlights the average word length.
-
-![](capstone_files/figure-html/explore.terms.wfreq-1.png) 
-
-The average length word in the sample texts has 7 characters.
+Document-term matrices are created and n-grams ranging in sequence length
+from 1 to 5 words are created for the purpose of analyzing word frequencies
+and various characteristics of the dataset.
 
 
 ### N-grams
@@ -162,63 +59,79 @@ clusters.
   delimiters <- " \\t\\r\\n.!?,;\"()"
 
   # n-gram tokenizers
-  BigramTokenizer <-
-    function(x) NGramTokenizer(x, Weka_control(min=2, max=2))
-  TrigramTokenizer <-
-    function(x, n) NGramTokenizer(x, Weka_control(min=3, max=3))
-  QuadgramTokenizer <-
-    function(x, n) NGramTokenizer(x, Weka_control(min=4, max=4))
-  PentagramTokenizer <-
-    function(x, n) NGramTokenizer(x, Weka_control(min=5, max=5))
+  BigramTokenizer <- function(x) NGramTokenizer(x, Weka_control(min=2, max=2))
+  TrigramTokenizer <- function(x, n) NGramTokenizer(x, Weka_control(min=3, max=3))
+  QuadgramTokenizer <- function(x, n) NGramTokenizer(x, Weka_control(min=4, max=4))
+  PentagramTokenizer <- function(x, n) NGramTokenizer(x, Weka_control(min=5, max=5))
  
-  gthreshold <- 15 # threshold for number of gram matches to display
+  gthreshold <- 15 # threshold for number of n-grams to display graphically
   options(mc.cores=1) # limit cores to prevent rweka processing problems
 
+  ft.1 <- 10
+  dtm.1 <- DocumentTermMatrix(filtered.sub.np, control=list(minDocFreq=ft.1))  
+  freq.1 <- sort(colSums(as.matrix(dtm.1)), decreasing=TRUE)
+  nf.1 <- data.frame(word=names(freq.1), freq=freq.1)
+  plotGram(gthreshold, freq.1, nf.1, "Word")
+```
+
+![](capstone_files/figure-html/explore.ngrams-1.png) 
+
+```r
   ft.2 <- 3
   dtm.2 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=BigramTokenizer, bounds=list(global=c(ft.2, Inf))))
   freq.2 <- sort(col_sums(dtm.2, na.rm=T), decreasing=TRUE)
   nf.2 <- data.frame(word=names(freq.2), freq=freq.2)
-  plotGram(gthreshold, freq.2, nf.2, "Bigram")
+  plotGram(gthreshold, freq.2, nf.2, "2-gram")
 ```
 
-![](capstone_files/figure-html/explore.ngrams-1.png) 
+![](capstone_files/figure-html/explore.ngrams-2.png) 
 
 ```r
   ft.3 <- 3
   dtm.3 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=TrigramTokenizer, bounds=list(global=c(ft.3, Inf))))
   freq.3 <- sort(col_sums(dtm.3, na.rm=T), decreasing=TRUE)
   nf.3 <- data.frame(word=names(freq.3), freq=freq.3)
-  plotGram(gthreshold, freq.3, nf.3, "Quadgram")
+  plotGram(gthreshold, freq.3, nf.3, "3-gram")
 ```
 
-![](capstone_files/figure-html/explore.ngrams-2.png) 
+![](capstone_files/figure-html/explore.ngrams-3.png) 
 
 ```r
   ft.4 <- 2 
   dtm.4 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=QuadgramTokenizer, bounds=list(global=c(ft.4, Inf))))
   freq.4 <- sort(col_sums(dtm.4, na.rm=T), decreasing=TRUE)
   nf.4 <- data.frame(word=names(freq.4), freq=freq.4)
-  plotGram(gthreshold, freq.4, nf.4, "Quadgram")
+  plotGram(gthreshold, freq.4, nf.4, "4-gram")
 ```
 
-![](capstone_files/figure-html/explore.ngrams-3.png) 
+![](capstone_files/figure-html/explore.ngrams-4.png) 
 
 ```r
   ft.5 <- 2
   dtm.5 <- DocumentTermMatrix(filtered.sub, control=list(tokenize=PentagramTokenizer, bounds=list(global=c(ft.5, Inf))))
   freq.5 <- sort(col_sums(dtm.5, na.rm=T), decreasing=TRUE)
   nf.5 <- data.frame(word=names(freq.5), freq=freq.5)
-  plotGram(gthreshold, freq.5, nf.5, "Pentagram")
+  plotGram(gthreshold, freq.5, nf.5, "5-gram")
 ```
 
-![](capstone_files/figure-html/explore.ngrams-4.png) 
+![](capstone_files/figure-html/explore.ngrams-5.png) 
+
+### Final/Optimized Dataset
 
 
 ```r
-#  r <- 10 # frequency span for last-resort randomization
-#  nf <- list("f1"=nf.1, "f2"=nf.2, "f3"=nf.3, "f4"=nf.4, "f5"=nf.5, "r"=r)
-#  save(nf, file="nFreq.Rda") # save the ngram frequencies to disk
-  load("nFreq-200000-10-3-3-2-2.Rda")
+  r <- 10 # frequency span for last-resort randomization
+  nf <- list("f1"=nf.1, "f2"=nf.2, "f3"=nf.3, "f4"=nf.4, "f5"=nf.5, "r"=r)
+  save(nf, file="data/nFreq.Rda") # save the ngram frequencies to disk
+```
+
+Generating the most common n-grams from even a subset (200K documents) of the
+full corpus can take several hours. Here, it is saved in a previous
+session and then loaded from disk:
+
+
+```r
+  load("data/nFreq-200000-10-3-3-2-2.Rda")
 ```
 
 ### N-Gram Distribution
@@ -232,215 +145,159 @@ clusters.
 ```
 
 #### Total Count (Unique)
-  * pentagrams: **345**
-  * quadgrams: **2064**
-  * trigrams: **3387**
-  * bigrams: **10421**
-  * words: **24485**
+  * 5-grams: **370** (w/ frequency > 2)
+  * 4-grams: **2090** (w/ frequency > 2)
+  * 3-grams: **3523** (w/ frequency > 3)
+  * 2-grams: **10708** (w/ frequency > 3)
+  * words: **24859** (w/ frequency > 10)
 
+
+#### Word Cloud
+
+A word cloud can be used to show the most frequently occurring words and {2, 3, 4, 5}-grams.
+
+![](capstone_files/figure-html/explore.terms.wc-1.png) 
 
 ## Prediction
 
-### Prediction Tests (Unit Tests)
+### Unit Tests
+
+Here are some simple tests to verify sane predictions for n-gram input phrases. The last word in each phrase is provided by the prediction function.
+
+#### 5-grams
+* was having a hard -> **time**
+
+#### 4-grams
+* thanks for the -> **follow**
+* a few years -> **ago**
+* the first time -> **in**
+* i am so -> **excited**
+
+#### 3-gram matches
+* be a -> **good**
+* can not -> **wait**
+* no matter -> **how**
+
+#### 2-gram matches
+* a -> **lot**
+* will -> **be**
+* could -> **not**
+
+#### non-match (***resorts to a pick from common 1-grams***)
+* xxxxxxxx -> **are**
 
 
-```r
-  # 4-gram matches
-  predictNextWord("could be a", nf)
-```
+## Algorithm and Optimizations
 
-```
-## [1] "good"
-```
+### Algorithm
 
-```r
-  predictNextWord("i have to say thanks for the", nf)
-```
+The following algorithm is applied for next word prediction
 
-```
-## [1] "follow"
-```
+1. Capture input text, including all preceding words in the phrase
+2. Iteratively traverse n-grams (longest to shortest) for matching strings
+3. On match(s), use the longest, highest frequency occurring, n-gram
+4. The last word in the matching n-gram is the predicted next word
+5. If no matches found in n-grams, randomly select a common word from 1-grams
 
-```r
-  predictNextWord("a few years", nf)
-```
+### Preprocessing
 
-```
-## [1] "ago"
-```
+The following preprocessing steps were applied to create a set of
+n-grams that  could be traversed in the search for a match with
+the input phrase.
 
-```r
-  predictNextWord("the first time", nf)
-```
+1. Convert texts to a DTM (document-term matrix)
+    * full corpus (4.2M lines) stored as DTM is ~16GB
+    * too large to manipulate in memory...
+2. Reduce corpus size by sampling a 1/4 subset 
+    * 1M documents can be stored and manipulated as a ~4GB DTM
+3. Perform basic text filtering
+    * remove digits
+    * convert special characters (e.g. /'s, @'s and |'s) to whitespace
+    * remove other special characters
+    * convert to lower case
+    * remove punctuation (for 1-grams), keep (for other n-grams)
+    * remove excess whitespace
+4. From the transformed/filtered DTM, generate n-grams
+    * use {1, 2, 3, 4}-grams as a starting point
 
-```
-## [1] "in"
-```
+### Optimizations 
 
-```r
-  predictNextWord("i am so", nf)
-```
+The algorithm depends on the existence of a set of n-grams which
+is large enough to contain a good sampling of word combinations but
+small enough to be searched in a fraction of a second. The following
+optimizations were tested in the pursuit of finding a reasonable balance
+between accuracy and prediction speed. For each combination, accuracy,
+execution time and dataset size were recorded.
 
-```
-## [1] "excited"
-```
+5. Initial attempt to generate {1, 2, 3, 4}-grams
+    * Tokenization of 4GB DTM still too memory/compute intensive
+    * Resulting sparse matrix X*Y dimensions too large
+    * Work around RWeka errors with "options(mc.cores=1)"
+6. Subsample DTM down further to 10K documents and generate {1, 2, 3, 4}-grams
+    * **Result: 10.1% accuracy, 8ms response time, 9.4MB dataset**
+7. Add 5-grams in attempt to improve accuracy
+    * **Result: 8.4% accuracy, 285ms response time, 14.1MB dataset**
+    * Worse accuracy? Maybe the corpus is too small..
+8. Increase size of sampled corpus (from 10K to 50K docs) and drop n-grams which don't occur at least once to improve accuracy and reduce DTM size
+    * **Result: 10.8% accuracy, 34ms response time, 1.0MB dataset**
+    * Better accuracy, pruning the n-grams seems promising..
+9. Further prune low-frequency n-grams (<10/6/4/3/2 occurrences)
+    * **Result: 11.8% accuracy, 27ms response time, 0.7MB dataset**
+10. Increase size of sampled corpus (from 50K to 100K docs)
+    * **Result: 12.3% accuracy, 37ms response time, 1.2MB dataset**
+11. Further increase size of sampled corpus (from 100K to 200K docs)
+    * **Result: 15.3% accuracy, 395ms response time, 11.7MB dataset**
+12. Apply profanity filter
+    * **Result: 15.3% accuracy, 400ms response time, 11.6MB dataset**
+13. Prune 2 and 3-grams occurring less than 3-times to improve performance
+    * **Result: 15.2% accuracy, 257ms response time, 9.1MB dataset**
 
-```r
-  predictNextWord("ejefiei i am so", nf)
-```
+### Final, Optimized N-grams
 
-```
-## [1] "excited"
-```
+* 4M corpus reduced to 1M documents via random sampling
+* 1M documents cleaned/transformed and reduced to 200K subset
+* Document-term matrix generated and n-grams up to depth 5 extracted
+* n-grams organized by frequency/# of occurrences in corpus
+* Least common n-grams pruned/dropped, resulting in final dataset
+    * Optimized N-grams: **9.1MB** compressed, **104MB** in-memory
+    * 18,936 words occurring more than 10x
+    * 199,966 2-grams w/ frequency > 3x
+    * 150,489 3-grams w/ frequency > 3x
+    * 139,984 4-grams w/ frequency > 2x
+    * 43,024 5-grams w/ frequency > 2x
 
-```r
-  # 3-gram matches
-  predictNextWord("be a", nf)
-```
+## Conclusions
 
-```
-## [1] "good"
-```
+Through a series of iterations of exploratory analysis, refinements and
+testing, predictive accuracy was improved from 8% to 15% while maintaining
+a response time suitable for interactive use (<300ms) and producing
+a compressed and optimized dataset under 10MB in size.
 
-```r
-  predictNextWord("can not", nf)
-```
+### Accuracy
 
-```
-## [1] "wait"
-```
-
-```r
-  predictNextWord("no matter", nf)
-```
-
-```
-## [1] "how"
-```
-
-```r
-  predictNextWord("jefjieie no matter", nf)
-```
-
-```
-## [1] "how"
-```
-
-```r
-  # 2-gram matches
-  predictNextWord("a", nf)
-```
-
-```
-## [1] "lot"
-```
-
-```r
-  predictNextWord("will", nf)
-```
-
-```
-## [1] "be"
-```
-
-```r
-  predictNextWord("could", nf)
-```
-
-```
-## [1] "not"
-```
-
-```r
-  predictNextWord("ejfejke could", nf)
-```
-
-```
-## [1] "not"
-```
-
-```r
-  # non-matches
-  predictNextWord("jkefjiee", nf)
-```
-
-```
-## [1] "and"
-```
-
-### Accuracy Tests
-
-Random substrings are extracted from the testing text set.
-The last word is excluded and the prediction model called on
-the string. The actual last word is then compared with the predicted
-last word, to guage the accuracy of the model.
+As a final accuracy test, **1000** random phrases of
+varying length were extracted from
+the testing text set and the last word of each sequence excluded.
+The word prediction model was then invoked on each test phrase and the
+predicted word compared to the actual (excluded) word from the phrase.
 
 
-```r
-  test.result <- testTimeAccuracy(filtered.test, nf)
-```
+The measured accuracy of the model (using only the 1st, top-ranked, response) is **14.19%**.
+  
 
-**100** strings were set aside in a test dataset.
+  The measured accuracy of the model (using top-5 ranked responses) is **21.63%**.
 
-Substrings were randomly selected from the test data and the model 
-used to predict the last word of the substring.
+### Performance
 
-The measured accuracy of the model is **7%**.
+The average speed of the algorithm is **238.0ms** per word prediction.
 
-The average speed of the algorithm is **2.0857\times 10^{4}ms** per word prediction.
+### Interactive Shiny Application and Further Details 
 
+A web application was developed to allow users to interact
+the prediction algorithm. The corpus preprocessing code and algorithms
+are linked below.
 
-## Optimizations 
-
-### Test Results - Accuracy, Response Time and Dataset Size
-
-* 10K texts, quadgrams, all punct stripped
-** 10.1%, 8ms - load("nFreq-10000-1-1-1-1.Rda") 9.4B
-* 10K texts, introduced pentagrams
-** 8.4%, 285ms - load("nFreq-10000-1-1-1-1-1.Rda") 14.1MB
-* 50K texts, <2 rep n-grams dropped
-** 10.8%, 34ms - load("nFreq-50000-2-2-2-2-2.Rda") 1.0MB
-* 50K texts, <10/6/4/3/2 rep n-grams dropped
-** 11.8%, 27ms - load("nFreq-50000-10-6-4-3-2.Rda") 0.7MB
-* 100K texts
-** 12.3%, 37ms - load("nFreq-100000-2-2-2-2-2.Rda") 1.2MB
-* 200K texts, hyphens intact in 1-grams, punct intact in 2+ grams
-** 15.3%, 395ms - load("nFreq-200000-10-2-2-2-2-new.Rda")  11.7 MB
-* w/ profanity removed
-** 15.3%, 395ms - load("nFreq-200000-10-2-2-2-2.Rda")  11.6 MB
-* further optimization, <3 rep 3-grams dropped
-** 15.5%, 353ms - load("nFreq-200000-10-2-3-2-2.Rda")  10.2 MB
-* further optimization, <3 rep 2 and 3-grams dropped
-** 15.2%, 287ms - load("nFreq-200000-10-3-3-2-2.Rda")  9.1 MB
-
-
-
->
-> save(nf, file="nFreq-200000-10-2-2-2-2-new.Rda")
-> dim(nf.1)
-[1] 19050     2
-> dim(nf.2)
-[1] 340191      2
-> dim(nf.3)
-[1] 319739      2
-> dim(nf.4)
-[1] 135801      2
-> dim(nf.5)
-[1] 41407     2
->
-
-
-10-3-3-2-2
-
-> dim(nf$f1)
-[1] 18936     2
-> dim(nf$f2)
-[1] 199966      2
-> dim(nf$f3)
-[1] 150489      2
-> dim(nf$f4)
-[1] 139984      2
-> dim(nf$f5)
-[1] 43024     2
->
->
+* [text-predictor application](http://pchuck.shinyapps.io/text-predictor) 
+* [github repository](http://github.com/pchuck/coursera-ds-capstone) 
+* [rpubs final report](http://rpubs.com/pchuck/text-predictor) 
+* [slidify presentation](http://rpubs.com/pchuck/text-predictor-slides)
