@@ -1,0 +1,63 @@
+Approach
+0 - understanding the problem
+1 - data acquisition and cleaning
+2 - exploratory analysis
+3 - modeling
+4 - prediction
+5 - creative exploration
+6 - data product
+7 - slide deck
+
+
+nlp and text mining
+  build a predictive model for text
+
+cleaning
+  handling
+    digits
+    typos
+    case
+  tokenization
+  profanity filtering
+
+
+packages
+  tm
+  rweka
+  zipfR - word frequency
+  textcat - n-gram categoriization
+  maxent - max entropy and minimal memory consumption
+  opennlp
+  wordnet - external sources
+
+  
+sub, gsub, grep
+
+R
+  length(readLines("en_US.twitter.txt"))
+
+
+Exploratory Analysis
+  How frequently do words appear
+  How frequently do
+    pairs
+    triplets
+    etc
+
+  Develop expectations
+  refine
+    (discover/reject)
+  repeat
+
+Modeling
+  n-gram model - for prediction based on previous 1, 2 or 3 words
+  need to be able to evaluate model
+  need to worry about performance (memory and speed)
+
+Prediction Model
+  full working model
+
+Report(s)
+  Exploration
+  Modeling
+  Prediction
