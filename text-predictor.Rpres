@@ -6,16 +6,15 @@ Text Prediction
 Coursera/Johns Hopkins Data Science Series  
 Capstone Project  
 
-Background
+Approach
 ========================================================
 
-A body of [sample texts](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) consisting of ~4M documents including tweets, news articles and blog posts are loaded an\
-d exploratory analysis performed. Sets of n-grams are extracted from the corpus, predictive algororithms built, and various approaches for improving predictive accuracy refined.
+A body of [sample texts](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip) consisting of ~4M documents including tweets, news articles and blog posts are loaded and exploratory analysis performed. Sets of n-grams are extracted from the corpus, predictive algororithms built, and various methods for improving predictive accuracy explored and refined.
 
 Optimization
 ========================================================
 
-* 4M corpus -> 1M documents via random sampling
+* 4M to 1M document reduction via random sampling
 * 1M documents transformed and reduced
 * Iterative process of analysis, optimization and perf testing
 * Document-term matrices generated with {1-5}-ngrams
